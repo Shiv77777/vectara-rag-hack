@@ -37,21 +37,21 @@ def get_knowledge_content(vectara, query, threshold=0.5):
         knowledge_content += f"Document {number}: {found_docs[number][0].page_content}\n"
     return knowledge_content
 
-def call_api(endpoint,prompt):
-    body = { "model": "codellama/CodeLlama-34b-Instruct-hf","messages": [{"role": "system", "content": "You are 'Onco Wise', a tool to fetch the latest data on rare diseases"},{"role": "user", "content": f"{prompt}"} ],"temperature": 0.7}
+def call_api(endpoint,prompt,knowledge):
+    body = { "model": "codellama/CodeLlama-34b-Instruct-hf","messages": [{"role": "system", "content": f"You are 'Onco Wise', a research tool to fetch the latest research data on diseases. You must state your sources for every answer. It is crucial that you do this. The additional knowledge you need to answer the question is right here: {knowledge}"},{"role": "user", "content": f"{prompt}"} ],"temperature": 0.5}
     headerList = {"Content-Type": "application/json" , "Authorization": f"Bearer {OPENAI_API_KEY}"}
     response = requests.post(url=endpoint,json=body,headers=headerList)
     return response.json()
 
-with st.sidebar:
-    st.header("Configuration")
-    uploaded_file = st.file_uploader("Choose a PDF file", type=["pdf"])
-    customer_id = st.text_input("Vectara Customer ID", value=CUSTOMER_ID)
-    api_key = st.text_input("Vectara API Key", value=API_KEY)
-    corpus_id = st.text_input("Vectara Corpus ID", value=CORPUS_ID)
-    openai_api_key = st.text_input("OpenAI API Key", value=OPENAI_API_KEY)
-    openai_api_base = st.text_input("OpenAI API Base", value=OPENAI_API_BASE)
-    submit_button = st.button("Submit")
+# with st.sidebar:
+#     st.header("Configuration")
+#     uploaded_file = st.file_uploader("Choose a PDF file", type=["pdf"])
+#     customer_id = st.text_input("Vectara Customer ID", value=CUSTOMER_ID)
+#     api_key = st.text_input("Vectara API Key", value=API_KEY)
+#     corpus_id = st.text_input("Vectara Corpus ID", value=CORPUS_ID)
+#     openai_api_key = st.text_input("OpenAI API Key", value=OPENAI_API_KEY)
+#     openai_api_base = st.text_input("OpenAI API Base", value=OPENAI_API_BASE)
+#     submit_button = st.button("Submit")
 
 st.title("Onco Wise")
 # Initialize chat history
@@ -70,10 +70,10 @@ if user_input := st.chat_input("Enter your issue:"):
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # knowledge_content = get_knowledge_content(vectara_client, user_input)
-    # print("__________________ Start of knowledge content __________________")
-    # print(knowledge_content)
-    response = call_api(f"{OPENAI_API_BASE}/chat/completions",user_input)
+    knowledge_content = get_knowledge_content(vectara_client, user_input)
+    print("__________________ Start of knowledge content __________________")
+    print(f"You are 'Onco Wise', a research tool to fetch the latest research data on diseases. You must provide in text citations for your sources for every answer. It is crucial that you do this. The additional knowledge you need to answer the question is right here: {knowledge_content}")
+    response = call_api(f"{OPENAI_API_BASE}/chat/completions",user_input,knowledge_content)
     full_response = response['choices'][0]['message']['content']
     
     with st.chat_message("assistant"):
